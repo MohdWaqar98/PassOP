@@ -1,42 +1,54 @@
-import React from "react";
-import { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
 import Swal from "sweetalert2";
-import axios from "axios";
+import api from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 const Manager = () => {
   const ref = useRef();
   const passwordRef = useRef();
-  const [form, setform] = useState({ site: "", username: "", password: "" });
-  const [passwordArray, setpasswordArray] = useState([]);
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({ site: "", username: "", password: "" });
+  const [passwordArray, setPasswordArray] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
 
-  const API_URL = "https://passop-backend-jx8n.onrender.com/api/passwords";
-
   useEffect(() => {
-    fetchPasswords();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+    } else {
+      fetchPasswords();
+    }
   }, []);
 
   const fetchPasswords = async () => {
+    setLoading(true);
     try {
-      const res = await axios.get(API_URL);
-      setpasswordArray(res.data);
+      const res = await api.get("/passwords");
+      setPasswordArray(res.data || []);
     } catch (error) {
       console.error("Failed to fetch passwords:", error);
+      if (error.response?.status === 401) {
+        toast.error("Session expired. Please login again.");
+        localStorage.removeItem("token");
+        navigate("/login");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   const showPassword = () => {
-    passwordRef.current.type = "text";
-    if (ref.current.src.includes("icons/hidden.png")) {
-      ref.current.src = "icons/eye.png";
-      passwordRef.current.type = "password";
-    } else {
-      ref.current.src = "icons/hidden.png";
-      passwordRef.current.type = "text";
-    }
+    passwordRef.current.type =
+      passwordRef.current.type === "password" ? "text" : "password";
+    ref.current.src =
+      passwordRef.current.type === "password"
+        ? "icons/eye.png"
+        : "icons/hidden.png";
   };
 
   const savePassword = async () => {
@@ -56,7 +68,7 @@ const Manager = () => {
 
     try {
       if (editMode) {
-        await axios.put(`${API_URL}/${editId}`, form);
+        await api.put(`/passwords/${editId}`, form);
         toast.success("✏️ Password Updated!", {
           containerId: "save-toast",
           position: "top-right",
@@ -67,7 +79,7 @@ const Manager = () => {
         setEditId(null);
       } else {
         const newPass = { ...form, id: uuidv4() };
-        await axios.post(API_URL, newPass);
+        await api.post("/passwords", newPass);
         toast.success("✅ Password Saved!", {
           containerId: "save-toast",
           position: "top-right",
@@ -75,7 +87,7 @@ const Manager = () => {
           theme: "dark",
         });
       }
-      setform({ site: "", username: "", password: "" });
+      setForm({ site: "", username: "", password: "" });
       fetchPasswords();
     } catch (error) {
       console.error("Error saving/updating password:", error);
@@ -95,7 +107,7 @@ const Manager = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await axios.delete(`${API_URL}/${id}`);
+          await api.delete(`/passwords/${id}`);
           Swal.fire({
             title: "Deleted!",
             text: "Your password has been deleted.",
@@ -106,31 +118,24 @@ const Manager = () => {
         } catch (error) {
           console.error("Error deleting password:", error);
         }
-      } else {
-        Swal.fire({
-          title: "Cancelled",
-          text: "Your password is safe.",
-          icon: "info",
-          confirmButtonColor: "#1d293d",
-        });
       }
     });
   };
 
   const editPassword = (id) => {
     const toEdit = passwordArray.find((i) => i.id === id);
-    setform({
+    setForm({
       site: toEdit.site,
       username: toEdit.username,
       password: toEdit.password,
     });
     setEditMode(true);
     setEditId(id);
-    setpasswordArray(passwordArray.filter((item) => item.id !== id));
+    setPasswordArray(passwordArray.filter((item) => item.id !== id));
   };
 
   const handleChange = (e) => {
-    setform({ ...form, [e.target.name]: e.target.value });
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const copyText = (text) => {
@@ -142,29 +147,24 @@ const Manager = () => {
     });
     navigator.clipboard.writeText(text);
   };
+
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter") {
+      savePassword();
+    }
+  };
+
   return (
     <>
-      <ToastContainer
-        containerId="copy-toast"
-        position="top-right"
-        theme="dark"
-      />
-      <ToastContainer
-        containerId="save-toast"
-        position="top-right"
-        theme="dark"
-      />
-      <ToastContainer
-        containerId="error-toast"
-        position="top-right"
-        theme="dark"
-      />
+      <ToastContainer containerId="copy-toast" />
+      <ToastContainer containerId="save-toast" />
+      <ToastContainer containerId="error-toast" />
 
-      <div className="fixed inset-0 -z-10 min-h-screen w-full bg-green-50 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]" />
-      <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-green-400 opacity-20 blur-[100px]"></div>
+      {/* Background */}
+      <div className="fixed inset-0 -z-10 bg-green-50 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]" />
+      <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-green-400 opacity-20 blur-[100px]" />
 
       <div className="container px-4 sm:px-8 md:px-20 lg:px-40 py-16 mx-auto">
-        {/* Title */}
         <h1 className="text-4xl font-bold text-center">
           <span className="text-green-500">&lt;</span>
           Pass
@@ -174,8 +174,11 @@ const Manager = () => {
           Your own Password Manager
         </p>
 
-        {/* Form Inputs */}
-        <div className="text-black flex flex-col p-4 gap-6 items-center">
+        {/* Form */}
+        <div
+          className="text-black flex flex-col p-4 gap-6 items-center"
+          onKeyDown={handleKeyPress}
+        >
           <input
             value={form.site}
             onChange={handleChange}
@@ -183,9 +186,7 @@ const Manager = () => {
             className="rounded-full border border-green-500 w-full px-4 py-2"
             type="text"
             name="site"
-            id="site"
           />
-
           <div className="flex flex-col md:flex-row w-full justify-between gap-6">
             <input
               value={form.username}
@@ -194,7 +195,6 @@ const Manager = () => {
               className="rounded-full border border-green-500 w-full px-4 py-2"
               type="text"
               name="username"
-              id="username"
             />
             <div className="relative w-full">
               <input
@@ -205,7 +205,6 @@ const Manager = () => {
                 className="rounded-full border border-green-500 w-full px-4 py-2 pr-10"
                 type="password"
                 name="password"
-                id="password"
               />
               <span
                 className="absolute right-2 top-2 cursor-pointer"
@@ -216,7 +215,7 @@ const Manager = () => {
                   className="p-1"
                   width={26}
                   src="icons/eye.png"
-                  alt=""
+                  alt="Show"
                 />
               </span>
             </div>
@@ -229,17 +228,22 @@ const Manager = () => {
             <lord-icon
               src="https://cdn.lordicon.com/efxgwrkc.json"
               trigger="hover"
-            ></lord-icon>
-            Save
+            />
+            {editMode ? "Update" : "Save"}
           </button>
         </div>
 
-        {/* Passwords Table */}
+        {/* Password Table */}
         <div className="passwords mt-10">
           <h2 className="font-bold text-xl py-4">Your Passwords</h2>
-          {passwordArray.length === 0 && <div>No Passwords to Show</div>}
 
-          {passwordArray.length !== 0 && (
+          {loading ? (
+            <div className="text-center text-gray-600">Loading...</div>
+          ) : passwordArray.length === 0 ? (
+            <div className="text-center text-gray-600">
+              No Passwords to Show
+            </div>
+          ) : (
             <div className="overflow-x-auto">
               <table className="table-auto w-full rounded-md overflow-hidden mb-8">
                 <thead className="bg-green-800 text-white">
