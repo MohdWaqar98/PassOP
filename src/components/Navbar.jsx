@@ -20,7 +20,7 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* GitHub Link - Always visible */}
+
           <a
             href="https://github.com/MohdWaqar98"
             target="_blank"
@@ -31,7 +31,6 @@ const Navbar = () => {
             <span className="font-bold px-1 text-sm hidden sm:inline">GitHub</span>
           </a>
 
-          {/* Logout Button - Only if logged in */}
           {isLoggedIn && (
             <button onClick={handleLogout} className="flex items-center">
               <lord-icon

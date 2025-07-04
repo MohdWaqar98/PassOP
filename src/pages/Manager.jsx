@@ -160,7 +160,6 @@ const Manager = () => {
       <ToastContainer containerId="save-toast" />
       <ToastContainer containerId="error-toast" />
 
-      {/* Background */}
       <div className="fixed inset-0 -z-10 bg-green-50 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]" />
       <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-green-400 opacity-20 blur-[100px]" />
 
@@ -173,8 +172,6 @@ const Manager = () => {
         <p className="text-green-900 text-lg text-center mb-6">
           Your own Password Manager
         </p>
-
-        {/* Form */}
         <div
           className="text-black flex flex-col p-4 gap-6 items-center"
           onKeyDown={handleKeyPress}
@@ -233,7 +230,6 @@ const Manager = () => {
           </button>
         </div>
 
-        {/* Password Table */}
         <div className="passwords mt-10">
           <h2 className="font-bold text-xl py-4">Your Passwords</h2>
 

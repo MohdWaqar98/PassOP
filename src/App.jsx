@@ -21,7 +21,6 @@ function App() {
             } />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            {/* Optional: 404 Not Found Route */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </main>
